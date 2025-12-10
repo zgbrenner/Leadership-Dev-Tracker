@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { AppState } from '../types';
 import { generateLeadershipInsights } from '../services/geminiService';
-import { Sparkles, Loader2, BarChart3, Target, Zap } from 'lucide-react';
+import { Sparkles, Loader2, BarChart3, Target, Zap, Download } from 'lucide-react';
 
 interface Props {
   state: AppState;
@@ -62,6 +62,47 @@ export const Dashboard: React.FC<Props> = ({ state }) => {
     setIsLoadingInsight(false);
   };
 
+  const handleExport = () => {
+    const headers = ['Type', 'Date', 'Content/Title', 'Details/Notes', 'Category/Intensity'];
+    
+    const escape = (val: string | number) => `"${String(val).replace(/"/g, '""')}"`;
+
+    const csvRows = [
+      headers.join(','),
+      ...state.reflections.map(r => [
+        escape('Reflection'),
+        escape(r.date),
+        escape(r.content),
+        escape(''),
+        escape(r.category)
+      ].join(',')),
+      ...state.triggers.map(t => [
+        escape('Trigger'),
+        escape(t.timestamp),
+        escape(t.trigger),
+        escape(t.notes),
+        escape(t.intensity)
+      ].join(',')),
+      ...state.accomplishments.map(a => [
+        escape('Accomplishment'),
+        escape(a.date),
+        escape(a.title),
+        escape(a.details),
+        escape('')
+      ].join(','))
+    ];
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `leader_dev_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -69,17 +110,26 @@ export const Dashboard: React.FC<Props> = ({ state }) => {
           <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Progress Dashboard</h2>
           <p className="text-slate-500 mt-1">Your leadership journey at a glance.</p>
         </div>
-        <button
-          onClick={handleGenerateInsight}
-          disabled={isLoadingInsight}
-          className="group relative inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-full hover:shadow-xl hover:shadow-indigo-500/20 hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-wait overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <span className="relative flex items-center gap-2 font-medium text-sm">
-            {isLoadingInsight ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} className="text-indigo-300 group-hover:text-white" />}
-            {isLoadingInsight ? 'Analyzing data...' : 'Generate AI Insights'}
-          </span>
-        </button>
+        <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleExport}
+              className="inline-flex items-center gap-2 bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-full hover:bg-slate-50 transition-all font-medium text-sm shadow-sm hover:shadow-md"
+            >
+              <Download size={16} className="text-slate-500" />
+              Export Data
+            </button>
+            <button
+            onClick={handleGenerateInsight}
+            disabled={isLoadingInsight}
+            className="group relative inline-flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-full hover:shadow-xl hover:shadow-indigo-500/20 hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:cursor-wait overflow-hidden"
+            >
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <span className="relative flex items-center gap-2 font-medium text-sm">
+                {isLoadingInsight ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} className="text-indigo-300 group-hover:text-white" />}
+                {isLoadingInsight ? 'Analyzing data...' : 'Generate AI Insights'}
+            </span>
+            </button>
+        </div>
       </header>
 
       {/* Stats Row */}
